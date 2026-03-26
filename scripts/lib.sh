@@ -69,11 +69,23 @@ load_state() {
 
 # AWS helper functions
 get_default_vpc() {
-    aws ec2 describe-vpcs \
+    if [ -z "$AWS_REGION" ]; then
+        log_error "AWS_REGION is not set"
+        return 1
+    fi
+
+    local vpc=$(aws ec2 describe-vpcs \
         --region "$AWS_REGION" \
         --filters "Name=isDefault,Values=true" \
         --query 'Vpcs[0].VpcId' \
-        --output text
+        --output text 2>&1)
+
+    if [ $? -ne 0 ]; then
+        log_error "Failed to get VPC: $vpc"
+        return 1
+    fi
+
+    echo "$vpc"
 }
 
 get_default_subnet() {

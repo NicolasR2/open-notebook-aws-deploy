@@ -15,6 +15,18 @@ fi
 source "$SCRIPT_DIR/config.env"
 source "$SCRIPT_DIR/scripts/lib.sh"
 
+# Export all config variables so they're available to child scripts
+export AWS_REGION
+export KEY_PAIR_NAME
+export NOTEBOOK_INSTANCE_TYPE
+export OLLAMA_INSTANCE_TYPE
+export NOTEBOOK_VOLUME_SIZE
+export OLLAMA_VOLUME_SIZE
+export ENCRYPTION_KEY
+export ENVIRONMENT_TAG
+export PROJECT_TAG
+export REPO_ROOT="$SCRIPT_DIR"
+
 # Trap to handle errors
 trap 'cleanup_on_error' EXIT
 

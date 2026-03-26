@@ -3,14 +3,20 @@
 
 set -e
 
-# Get the repo root directory
-REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# Get the repo root directory (set by parent or determine here)
+if [ -z "$REPO_ROOT" ]; then
+    REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+fi
 
-# Load configuration
-source "$REPO_ROOT/config.env"
+# Load configuration (use exported vars if available, otherwise source)
+if [ -z "$AWS_REGION" ]; then
+    source "$REPO_ROOT/config.env"
+fi
+
 source "$REPO_ROOT/scripts/lib.sh"
 
 log_info "=== Creating Security Groups ==="
+log_info "DEBUG: AWS_REGION=$AWS_REGION"
 
 # Get VPC
 log_info "Getting default VPC..."
