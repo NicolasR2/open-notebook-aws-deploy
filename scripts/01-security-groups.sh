@@ -3,7 +3,12 @@
 
 set -e
 
-source "$(dirname "$0")/lib.sh"
+# Get the repo root directory
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+
+# Load configuration
+source "$REPO_ROOT/config.env"
+source "$REPO_ROOT/scripts/lib.sh"
 
 log_info "=== Creating Security Groups ==="
 

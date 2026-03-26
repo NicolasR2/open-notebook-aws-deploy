@@ -4,6 +4,11 @@
 
 set -e
 
+# Simple logging (no colors in userdata)
+log_info() { echo "[INFO] $1"; }
+log_success() { echo "[SUCCESS] $1"; }
+log_error() { echo "[ERROR] $1"; exit 1; }
+
 # Update system
 yum update -y
 

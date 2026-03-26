@@ -3,9 +3,19 @@
 
 set -e
 
-source "$(dirname "$0")/lib.sh"
+# Get the repo root directory
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+
+# Load configuration
+source "$REPO_ROOT/config.env"
+source "$REPO_ROOT/scripts/lib.sh"
 
 log_info "=== Deploying Ollama EC2 ==="
+
+# Define REPO_ROOT for state file access
+if [ -z "$REPO_ROOT" ]; then
+    REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+fi
 
 # Load previously saved state
 OLLAMA_SG=$(load_state "OLLAMA_SG")

@@ -28,14 +28,16 @@ log_warn() {
 }
 
 # State file management
-STATE_FILE=".deployed-state"
+STATE_FILE="${REPO_ROOT:-.}/.deployed-state"
 
 save_state() {
     local key=$1
     local value=$2
 
+    # Create state file if it doesn't exist
     if [ ! -f "$STATE_FILE" ]; then
-        echo "" > "$STATE_FILE"
+        mkdir -p "$(dirname "$STATE_FILE")"
+        touch "$STATE_FILE"
     fi
 
     if grep -q "^${key}=" "$STATE_FILE"; then
