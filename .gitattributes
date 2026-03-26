@@ -1,0 +1,6 @@
+*.sh export-ignore eol=lf
+deploy.sh export-ignore eol=lf
+destroy.sh export-ignore eol=lf
+status.sh export-ignore eol=lf
+scripts/*.sh export-ignore eol=lf
+userdata/*.sh export-ignore eol=lf
