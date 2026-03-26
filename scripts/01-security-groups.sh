@@ -27,72 +27,89 @@ if [ -z "$VPC_ID" ]; then
 fi
 log_success "Using VPC: $VPC_ID"
 
-# Create Ollama Security Group
-log_info "Creating Ollama security group..."
-OLLAMA_SG=$(aws ec2 create-security-group \
+# Create or reuse Ollama Security Group
+log_info "Checking for existing Ollama security group..."
+OLLAMA_SG=$(aws ec2 describe-security-groups \
     --region "$AWS_REGION" \
-    --group-name "open-notebook-ollama-sg" \
-    --description "Security group for OpenNotebook Ollama service" \
-    --vpc-id "$VPC_ID" \
-    --query 'GroupId' \
-    --output text)
+    --filters "Name=group-name,Values=open-notebook-ollama-sg" "Name=vpc-id,Values=$VPC_ID" \
+    --query 'SecurityGroups[0].GroupId' \
+    --output text 2>/dev/null || echo "")
 
-log_success "Ollama SG created: $OLLAMA_SG"
+if [ "$OLLAMA_SG" = "None" ] || [ -z "$OLLAMA_SG" ]; then
+    log_info "Creating new Ollama security group..."
+    OLLAMA_SG=$(aws ec2 create-security-group \
+        --region "$AWS_REGION" \
+        --group-name "open-notebook-ollama-sg" \
+        --description "Security group for OpenNotebook Ollama service" \
+        --vpc-id "$VPC_ID" \
+        --query 'GroupId' \
+        --output text)
+    log_success "Ollama SG created: $OLLAMA_SG"
+else
+    log_success "Using existing Ollama SG: $OLLAMA_SG"
+fi
 
-# Create OpenNotebook Security Group
-log_info "Creating OpenNotebook security group..."
-NOTEBOOK_SG=$(aws ec2 create-security-group \
+# Create or reuse OpenNotebook Security Group
+log_info "Checking for existing OpenNotebook security group..."
+NOTEBOOK_SG=$(aws ec2 describe-security-groups \
     --region "$AWS_REGION" \
-    --group-name "open-notebook-sg" \
-    --description "Security group for OpenNotebook application" \
-    --vpc-id "$VPC_ID" \
-    --query 'GroupId' \
-    --output text)
+    --filters "Name=group-name,Values=open-notebook-sg" "Name=vpc-id,Values=$VPC_ID" \
+    --query 'SecurityGroups[0].GroupId' \
+    --output text 2>/dev/null || echo "")
 
-log_success "OpenNotebook SG created: $NOTEBOOK_SG"
+if [ "$NOTEBOOK_SG" = "None" ] || [ -z "$NOTEBOOK_SG" ]; then
+    log_info "Creating new OpenNotebook security group..."
+    NOTEBOOK_SG=$(aws ec2 create-security-group \
+        --region "$AWS_REGION" \
+        --group-name "open-notebook-sg" \
+        --description "Security group for OpenNotebook application" \
+        --vpc-id "$VPC_ID" \
+        --query 'GroupId' \
+        --output text)
+    log_success "OpenNotebook SG created: $NOTEBOOK_SG"
+else
+    log_success "Using existing OpenNotebook SG: $NOTEBOOK_SG"
+fi
+
+# Helper function to add ingress rule (ignore if already exists)
+add_ingress_rule() {
+    local sg_id=$1
+    local protocol=$2
+    local port=$3
+    local cidr=$4
+    local source_group=$5
+
+    local cmd="aws ec2 authorize-security-group-ingress --region $AWS_REGION --group-id $sg_id --protocol $protocol --port $port"
+
+    if [ -n "$cidr" ]; then
+        cmd="$cmd --cidr $cidr"
+    fi
+
+    if [ -n "$source_group" ]; then
+        cmd="$cmd --source-group $source_group"
+    fi
+
+    # Execute and ignore if rule already exists
+    eval "$cmd" 2>/dev/null || true
+}
 
 # Add SSH access to both security groups (from anywhere - adjust as needed)
 log_info "Adding SSH access to Ollama SG..."
-aws ec2 authorize-security-group-ingress \
-    --region "$AWS_REGION" \
-    --group-id "$OLLAMA_SG" \
-    --protocol tcp \
-    --port 22 \
-    --cidr 0.0.0.0/0
+add_ingress_rule "$OLLAMA_SG" "tcp" "22" "0.0.0.0/0"
 
 log_info "Adding SSH access to OpenNotebook SG..."
-aws ec2 authorize-security-group-ingress \
-    --region "$AWS_REGION" \
-    --group-id "$NOTEBOOK_SG" \
-    --protocol tcp \
-    --port 22 \
-    --cidr 0.0.0.0/0
+add_ingress_rule "$NOTEBOOK_SG" "tcp" "22" "0.0.0.0/0"
 
 # Add Ollama port access (from OpenNotebook SG only)
 log_info "Adding Ollama port (11434) access from OpenNotebook SG..."
-aws ec2 authorize-security-group-ingress \
-    --region "$AWS_REGION" \
-    --group-id "$OLLAMA_SG" \
-    --protocol tcp \
-    --port 11434 \
-    --source-group "$NOTEBOOK_SG"
+add_ingress_rule "$OLLAMA_SG" "tcp" "11434" "" "$NOTEBOOK_SG"
 
 # Add OpenNotebook web and API port access (from anywhere)
 log_info "Adding OpenNotebook UI port (8502) access..."
-aws ec2 authorize-security-group-ingress \
-    --region "$AWS_REGION" \
-    --group-id "$NOTEBOOK_SG" \
-    --protocol tcp \
-    --port 8502 \
-    --cidr 0.0.0.0/0
+add_ingress_rule "$NOTEBOOK_SG" "tcp" "8502" "0.0.0.0/0"
 
 log_info "Adding OpenNotebook API port (5055) access..."
-aws ec2 authorize-security-group-ingress \
-    --region "$AWS_REGION" \
-    --group-id "$NOTEBOOK_SG" \
-    --protocol tcp \
-    --port 5055 \
-    --cidr 0.0.0.0/0
+add_ingress_rule "$NOTEBOOK_SG" "tcp" "5055" "0.0.0.0/0"
 
 # Save to state file
 save_state "VPC_ID" "$VPC_ID"
