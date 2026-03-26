@@ -98,11 +98,13 @@ get_default_subnet() {
 }
 
 get_latest_ami() {
-    # Get latest Amazon Linux 2023 AMI
+    # Get latest Amazon Linux 2023 AMI (x86_64 architecture for t3 instances)
     aws ec2 describe-images \
         --region "$AWS_REGION" \
         --owners amazon \
-        --filters "Name=name,Values=al2023-ami-*" "Name=state,Values=available" \
+        --filters "Name=name,Values=al2023-ami-*" \
+                  "Name=state,Values=available" \
+                  "Name=architecture,Values=x86_64" \
         --query 'sort_by(Images, &CreationDate)[-1].ImageId' \
         --output text
 }
