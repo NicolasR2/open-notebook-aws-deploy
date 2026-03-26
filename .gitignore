@@ -1,0 +1,24 @@
+# Deployment state
+.deployed-state
+.deployed-state.bak
+
+# Local configuration overrides
+config.local.env
+
+# SSH keys (if stored locally - better to use AWS key pairs)
+*.pem
+*.ppk
+
+# Temporary files
+*.tmp
+*.swp
+*~
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# AWS credentials (if accidentally added)
+.aws/
