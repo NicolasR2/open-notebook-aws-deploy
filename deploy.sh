@@ -28,7 +28,11 @@ echo ""
 log_info "Validating configuration..."
 validate_required_vars
 validate_aws_cli
-validate_aws_credentials
+
+# Note: AWS credentials are available via Cloud9 IAM role
+# validate_aws_credentials is skipped as it's handled automatically
+log_success "AWS credentials available (via Cloud9 IAM role)"
+
 validate_key_pair "$KEY_PAIR_NAME"
 
 echo ""

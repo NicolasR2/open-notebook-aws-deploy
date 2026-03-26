@@ -14,22 +14,32 @@ Both instances are in a VPC with proper security configurations. You bring your 
 
 ## Prerequisites
 
-- AWS Account with CLI credentials configured
-- AWS CLI installed on your local machine or Cloud9
+- **AWS Cloud9 environment** with AWS CLI pre-installed and IAM role configured
 - An EC2 Key Pair created in your AWS region
 - Basic knowledge of bash/terminal
 
-## Quick Start
+> ℹ️ **Note:** These scripts are designed to run from AWS Cloud9. Credentials are automatically available through the Cloud9 IAM role—no need to configure AWS CLI credentials manually.
 
-### 1. Configure
+## Quick Start (from Cloud9)
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/NicolasR2/open-notebook-aws-deploy.git
+cd open-notebook-aws-deploy
+```
+
+### 2. Configure
 
 Edit `config.env` with your AWS settings:
 
 ```bash
-AWS_REGION=us-east-1                    # Your AWS region
-KEY_PAIR_NAME=my-key-pair               # Name of your EC2 key pair
-ENCRYPTION_KEY=change-me-to-random-32-char-string  # Random secret
+AWS_REGION=us-east-1                    # Your AWS region (where Cloud9 is)
+KEY_PAIR_NAME=my-key-pair               # Name of your EC2 key pair (must exist)
+ENCRYPTION_KEY=change-me-to-random-32-char-string  # Random secret for encryption
 ```
+
+> **AWS Credentials:** Already available in Cloud9 via IAM role—no manual setup needed!
 
 ### 2. Deploy
 

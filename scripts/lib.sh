@@ -183,8 +183,11 @@ validate_aws_cli() {
 }
 
 validate_aws_credentials() {
+    # Note: In Cloud9, credentials are provided via IAM role
+    # This validation is optional and can be skipped if running in Cloud9
     if ! aws sts get-caller-identity --region "$AWS_REGION" &> /dev/null; then
         log_error "AWS credentials not configured or invalid"
+        log_info "If running in Cloud9, ensure the environment has an IAM role with EC2 permissions"
         exit 1
     fi
     log_success "AWS credentials valid"
