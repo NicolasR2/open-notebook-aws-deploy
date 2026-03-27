@@ -12,8 +12,10 @@ yum update -y
 # Install Docker
 yum install docker -y
 
-# Install Docker Compose plugin
-yum install docker-compose-plugin -y
+# Install Docker Compose plugin (Amazon Linux 2023 requires manual install)
+mkdir -p /usr/local/lib/docker/cli-plugins
+curl -SL https://github.com/docker/compose/releases/download/v2.24.6/docker-compose-linux-x86_64 -o /usr/local/lib/docker/cli-plugins/docker-compose
+chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
 
 # Start Docker
 systemctl enable docker
@@ -30,21 +32,19 @@ services:
   surrealdb:
     image: surrealdb/surrealdb:v2
     container_name: surrealdb
+    user: root
     ports:
       - "8000:8000"
     volumes:
       - surreal_data:/data
-    environment:
-      SURREAL_USER: root
-      SURREAL_PASSWORD: root
-    command: start --log trace file:/data/database.db
+    command: start --log trace --username root --password root surrealkv:///data/database.db
     restart: unless-stopped
 
   open_notebook:
     image: lfnovo/open_notebook:latest
     container_name: open_notebook
     ports:
-      - "8502:8501"
+      - "8502:8502"
       - "5055:5055"
     volumes:
       - notebook_data:/app/data
