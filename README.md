@@ -70,13 +70,77 @@ Open the URL in your browser. The first load may take a few minutes while Docker
 
 ### 4. Configure LLM Provider
 
-1. Go to Settings → API Keys
-2. Add your LLM provider:
-   - **OpenAI**: Paste your `sk-...` key
-   - **Anthropic**: Paste your `sk-ant-...` key
-   - **Other providers**: Groq, Mistral, Google, xAI, Perplexity, DeepSeek, etc.
+OpenNotebook does **not** auto-detect providers from environment variables alone. You must register your API key and models explicitly.
 
-OpenNotebook will auto-detect your Ollama instance for embeddings.
+#### Option A — Via the UI (simplest)
+
+1. Open the app at `http://<IP>:8502`
+2. Go to **Settings → API Keys**
+3. Add your provider key (Google, OpenAI, Anthropic, Groq, etc.)
+4. Go to **Settings → Models** and assign:
+   - **Chat Model** (required)
+   - **Transformation Model** (required)
+   - **Embedding Model** (required — use `nomic-embed-text` with Ollama)
+
+#### Option B — Via environment variable + API (recommended for persistence)
+
+Add your API key to the docker-compose on the notebook instance so it survives restarts:
+
+```bash
+# SSH into the notebook instance
+ssh -i <your-key.pem> ec2-user@<notebook-ip>
+
+# Edit docker-compose
+sudo nano /app/docker-compose.yml
+```
+
+Under `open_notebook → environment`, add your key:
+
+```yaml
+environment:
+  GOOGLE_API_KEY: your-key-here       # Google Gemini
+  # OPENAI_API_KEY: sk-...            # OpenAI
+  # ANTHROPIC_API_KEY: sk-ant-...     # Anthropic
+  # GROQ_API_KEY: gsk-...             # Groq (free tier available)
+```
+
+Then register the models via the API (replace IDs after creating):
+
+```bash
+# Register models
+curl -X POST http://localhost:5055/api/models \
+  -H "Content-Type: application/json" \
+  -d '{"name": "gemini-2.0-flash", "provider": "google", "type": "language"}'
+
+curl -X POST http://localhost:5055/api/models \
+  -H "Content-Type: application/json" \
+  -d '{"name": "nomic-embed-text", "provider": "ollama", "type": "embedding"}'
+
+# List models to get their IDs
+curl http://localhost:5055/api/models
+
+# Set defaults using the IDs returned above
+curl -X PUT http://localhost:5055/api/models/defaults \
+  -H "Content-Type: application/json" \
+  -d '{
+    "default_chat_model": "model:<id-from-above>",
+    "default_transformation_model": "model:<id-from-above>",
+    "large_context_model": "model:<id-from-above>",
+    "default_tools_model": "model:<id-from-above>",
+    "default_embedding_model": "model:<id-from-above>"
+  }'
+```
+
+> **Important:** Model defaults must use the SurrealDB record ID format (`model:xxxx`), not the model name string.
+
+#### Recommended free providers
+
+| Provider | Free Tier | Models |
+|---|---|---|
+| **Groq** | Yes (generous) | `llama-3.3-70b`, `gemma2-9b-it` |
+| **Google Gemini** | Yes (limited) | `gemini-2.0-flash`, `gemini-2.0-flash-lite` |
+| **OpenAI** | No | `gpt-4o`, `gpt-4o-mini` |
+| **Anthropic** | No | `claude-3-5-sonnet`, `claude-3-haiku` |
 
 ### 5. Test
 
